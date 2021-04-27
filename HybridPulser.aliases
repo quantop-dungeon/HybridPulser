@@ -1,0 +1,6 @@
+[My Computer]
+My Computer = "172.22.11.1"
+
+[NI-myRIO-hybrid]
+NI-myRIO-hybrid = "172.22.11.2"
+
