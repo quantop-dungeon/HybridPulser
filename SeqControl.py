@@ -25,22 +25,23 @@ class Sequence:
 
     cmdnr = { 'jmp': 0, 'dly' : 1, 'con' : 2}
 
-    def __init__(self,dur):
+    def __init__(self, dur, defaults=0):
         self.dur = dur 
         self.tcommands = []
         self.times = []
         self.commands = []
-        self.defaults = 0
+        self.defaults = defaults
         self.duration = 0
-        
+
         self.context = zmq.Context()
 
 
 
     def pulse(self, ch, delay, duration):
-        self.tcommands.append(SwitchPinCommand(ch,1))
+        logic = (2**ch & self.defaults) >> ch
+        self.tcommands.append(SwitchPinCommand(ch, not logic))
         self.times.append(delay)
-        self.tcommands.append(SwitchPinCommand(ch,0))
+        self.tcommands.append(SwitchPinCommand(ch, logic))
         self.times.append(delay+duration)
 
     def compile(self):
@@ -59,7 +60,6 @@ class Sequence:
             # make the delay for the next command
             if t>prevt:
                 wait = int((t-prevt)/self.dt)
-
                 self.commands.append(['dly', wait])
             # unless we want it to happen immediately
             elif t==prevt:
