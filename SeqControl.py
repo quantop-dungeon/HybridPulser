@@ -43,7 +43,15 @@ class Sequence:
         self.times.append(delay)
         self.tcommands.append(SwitchPinCommand(ch, logic))
         self.times.append(delay+duration)
-
+        
+    def delay(self, wait):
+        if wait > 2**24 - 1:
+            # split long delays into many shorter delays (max=2^24-1)
+            self.commands.append(['dly', 2**24 - 1])
+            self.delay(wait - 2**24) # we take away 1 since it takes 1 tick to run the dly command
+        else:
+            self.commands.append(['dly', wait])
+            
     def compile(self):
         self.times = np.array(self.times)
         self.tcommands = np.array(self.tcommands)
@@ -60,7 +68,7 @@ class Sequence:
             # make the delay for the next command
             if t>prevt:
                 wait = int((t-prevt)/self.dt)
-                self.commands.append(['dly', wait])
+                self.delay(wait)
             # unless we want it to happen immediately
             elif t==prevt:
                 pass
@@ -80,7 +88,7 @@ class Sequence:
 
         if t < self.dur:
             wait = int((self.dur-t)/self.dt)
-            self.commands.append(['dly', wait])
+            self.delay(wait)
             self.duration = self.dur
         else:
             self.duration = t
@@ -99,6 +107,7 @@ class Sequence:
         socket = self.context.socket(zmq.REQ)
         socket.connect("tcp://localhost:5555")
 
+        # Nice code bro! BTW, zmq has send_json
         socket.send_string(json.dumps(self.mcode))
 
         message = socket.recv()
