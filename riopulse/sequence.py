@@ -1,0 +1,311 @@
+from typing import Union
+import matplotlib.pyplot as plt
+
+
+class Sequence:
+    """Defines a realization of pulses in multiple synchronized digital 
+    channels.
+
+    Pulses can be added to the sequence using add_pulse and append_pulse 
+    methods, which are different only in the way they parametrize timing. 
+    The duration of the sequence equals (stop_time - start_time) and can be 
+    set via the stop_time and start_time attributes.
+
+    Args:
+        nchannels: 
+            Number of channels.
+        start_time:
+            The beginning time of the pulse sequence (s). By default is 0.
+        stop_time:
+            The end time of the pulse sequence (s). 
+
+    Attributes:
+        channels: A list containing sequences of the channel states. 
+        start_time: See args.
+        stop_time: See args.
+    """
+
+    def __init__(self,
+                 nchannels: int = 8,
+                 start_time: float = 0,
+                 stop_time: Union[float, None] = None):
+
+        # Creates the list that will store channel states.
+        self.channels = [DigitalChannel() for i in range(nchannels)]
+
+        if not stop_time:
+            # In this case the sequence duration is considered zero until
+            # some pulses are added.
+            stop_time = start_time
+
+        self._interval = [start_time, stop_time]
+
+    def add_pulse(self, ch, t0, duration):
+        """Adds a pulse to the specified channel. A pulse consists of switching
+        the channel state from the previous one, keeping the new state for the
+        duration of time, and then switching the state back.
+
+        Args:
+            ch: 
+                Channel number.
+            t0: 
+                The time of the front edge of the pulse (s).
+            duration:
+                The duration of the pulse (s) - the interval between the front 
+                and the back edges.
+        """
+        if duration <= 0:
+            raise ValueError('Duration must be positive.')
+
+        c = self.channels[ch]  # A short-hand notation
+
+        t1 = t0 + duration  # The back edge of the pulse
+
+        # Checks that there are no existing state switches between the front
+        # and the back edges of the pulse.
+        ft = [t for t in c.switch_times if (t > t0 and t < t1)]
+        if ft:
+            raise ValueError(f'There must be no existing transitions in the '
+                             'channel {ch} during the interval of the new '
+                             'pulse, [{t0}, {t1}]. Currently, there are '
+                             'transitions at t = {ft}.')
+
+        # Adds a new pulse to the channel.
+        c.add_state_switch(t0)
+        c.add_state_switch(t1)
+
+    def append_pulse(self, ch, delay, duration):
+        """Appends a pulse to the specified channel. A pulse consists of
+        switching the channel state from the defult, keeping the new state 
+        for the duration of time, and then switching the state back.
+
+        Args:
+            ch: 
+                Channel number.
+            delay: 
+                The delay (s) between the latest existing state transition in 
+                the channel and the front edge of the new pulse.
+            duration:
+                The duration (s) of the pulse - the interval between the front 
+                and the back edges.
+        """
+        if delay <= 0:
+            raise ValueError('Delay must be positive.')
+        if duration <= 0:
+            raise ValueError('Duration must be positive.')
+
+        c = self.channels[ch]  # A short-hand notation
+
+        # The front edge of the pulse.
+        if c.switch_times:
+            t0 = c.switch_times[-1] + delay
+        else:
+            t0 = self.start_time + delay
+
+        t1 = t0 + duration  # The back edge of the pulse
+
+        # Adds a new pulse to the channel.
+        c.add_state_switch(t0)
+        c.add_state_switch(t1)
+
+    @property
+    def start_time(self):
+
+        # Finds the minimum of the internally stored start time and
+        # the time of the earliest state transition in the channels.
+        value = self._interval[0]
+        for c in self.channels:
+            if c.switch_times and value > c.switch_times[0]:
+                value = c.switch_times[0]
+
+        return value
+
+    @start_time.setter
+    def start_time(self, value):
+        for i, c in enumerate(self.channels):
+            if c.switch_times and value > c.switch_times[0]:
+                raise ValueError('The start time cannot be greater than '
+                                 'the time of the first transition '
+                                 f'in channel {i} (t={c.switch_times[0]}).')
+
+        if value > self.stop_time:
+            raise ValueError('The start time cannot be greater than '
+                             'the stop time.')
+
+        self._interval[0] = value
+
+    @property
+    def stop_time(self):
+
+        # Finds the maximum of the internally stored stop time and
+        # the time of the latest state transition in the channels.
+        value = self._interval[1]
+        for c in self.channels:
+            if c.switch_times and value < c.switch_times[-1]:
+                value = c.switch_times[-1]
+
+        return value
+
+    @stop_time.setter
+    def stop_time(self, value):
+        for i, c in enumerate(self.channels):
+            if c.switch_times and value < c.switch_times[-1]:
+                raise ValueError('The stop time cannot be smaller than '
+                                 'the time of the last transition '
+                                 f'in channel {i} (t={c.switch_times[-1]}).')
+
+        if value < self.start_time:
+            raise ValueError('The stop time cannot be smaller than '
+                             'the start time.')
+
+        self._interval[1] = value
+
+    def plot(self, fig=None):
+        """Plots the channel states versus time using matplotlib.
+
+        Args:
+            fig (matplotlib Figure, optional)
+        """
+
+        if not self.channels:
+            # There needs to be at least one channel to plot.
+            return
+
+        channel_no = len(self.channels)
+
+        if not fig:
+            h = min(8, channel_no + 1)
+            fig = plt.figure(figsize=(10, h))
+
+        gs = fig.add_gridspec(channel_no, hspace=0)
+        axs = gs.subplots(sharex=True, sharey=True)
+
+        fig.suptitle('Channel states')
+
+        for i in range(channel_no):
+            axs[i].plot(*self.channels[i].curve(interval=self._interval),
+                        color=(6/255, 85/255, 170/255), linewidth=1)
+
+            # Configures the axes appearance.
+            axs[i].set_ylabel(f'Ch {i}')
+            axs[i].set_facecolor('none')
+            axs[i].minorticks_on()
+            axs[i].tick_params(axis='both', direction='in', which='both',
+                               bottom=True, top=False, left=True, right=True)
+
+        axs[-1].set_xlim(self._interval)
+        axs[-1].set_xlabel('Time (s)')
+        axs[-1].set_yticks([0, 1])
+        axs[-1].set_ylim(-0.1, 1.1)
+
+        fig.tight_layout()
+
+
+class DigitalChannel:
+    """Defines a time-dependent state of a single digital channel via the list 
+    of its state transitions.
+
+    Attributes:
+        default:
+            The default state of the channel, a bool or 0/1.
+        switch_times (List[float]):
+            An ordered list containing times (in seconds) at which the channel 
+            state is flipped. This list is to be modified only by using 
+            add_state_switch method. 
+    """
+
+    def __init__(self, default=False):
+        self.default = bool(default)
+        self.switch_times = []
+
+    def add_state_switch(self, t):
+        """Adds a state flip at the time t (s)."""
+
+        if t in self.switch_times:
+            raise ValueError('A state change at time %.3e already exists' % t)
+
+        # Adds a new state switch in a way that keeps the list time-ordered.
+        ind = len([t1 for t1 in self.switch_times if t1 < t])
+        self.switch_times.insert(ind, t)
+
+    def state(self, t):
+        """Returns the state at the time t (s). If there is a state transition 
+        at t, returns the value before the transition."""
+
+        ind = len([t1 for t1 in self.switch_times if t1 < t])
+        if ind % 2 == 0:
+            st = self.default
+        else:
+            st = not self.default
+        return st
+
+    def states(self):
+        """Returns a list where the i-th element is the state before the i-th 
+        state transition."""
+        
+        new_states = []
+        for i in range(len(self.switch_times)):
+            if i % 2 == 0:
+                new_states.append(not self.default)
+            else:
+                new_states.append(self.default)
+
+        return new_states
+
+    def curve(self, interval=[]):
+        """Returns the state as a function of time over the specified 
+        time interval.
+
+        Args:
+            interval: A time inteval [t0, t1].
+
+        Returns:
+            (times, states)
+        """
+
+        if interval:
+            t0 = min(interval)
+            t1 = max(interval)
+            swt = [t for t in self.switch_times if (t >= t0) and (t <= t1)]
+        else:
+            # Sets the interval to cover all switch times.
+            if self.switch_times:
+                t0 = self.switch_times[0]
+                t1 = self.switch_times[-1]
+                swt = self.switch_times
+            else:
+                return ([], [])
+
+        times = []
+        states = []
+
+        if t0 not in swt:
+            # Appends the state in the beginning of the interval.
+            times.append(t0)
+            states.append(self.state(t0))
+
+        for t in swt:
+            st = self.state(t)
+
+            # Appends the state before the switch.
+            times.append(t)
+            states.append(st)
+
+            # Appends the state after the switch.
+            times.append(t)
+            states.append(not st)
+
+        if t1 not in swt:
+            # Appends the state in the end of the interval.
+            times.append(t1)
+            states.append(self.state(t1))
+
+        return (times, states)
+
+    def __str__(self):
+        """Displays the list of state transitions in a readable form."""
+        switches = []
+        for t in self.switch_times:
+            st = self.state(t)
+            switches.append('t=%.3e s: %i->%i' % (t, st, not st))
+        return str(switches)
