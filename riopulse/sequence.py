@@ -310,11 +310,14 @@ class DigitalChannel:
 
         return (times, states)
 
-    def __str__(self):
+    def __repr__(self):
         """Displays the list of state transitions in a readable form."""
 
         switches = []
         for t in self.switch_times:
             st = self.state(t)
-            switches.append('t=%.3e s: %i->%i' % (t, st, not st))
-        return str(switches)
+            switches.append('t=%gs\t%i->%i' % (t, st, not st))
+        
+        string_form = ('%s:\n%s' % 
+                       (type(self).__name__, '\n'.join(switches)))
+        return string_form
