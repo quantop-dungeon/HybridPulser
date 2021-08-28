@@ -1,4 +1,3 @@
-from typing import Union
 import matplotlib.pyplot as plt
 
 
@@ -8,39 +7,46 @@ class Sequence:
 
     Pulses can be added to the sequence using add_pulse and append_pulse 
     methods, which are different only in the way they parametrize timing. 
-    The duration of the sequence equals (stop_time - start_time) and can be 
-    set via the stop_time and start_time attributes.
 
-    Args:
-        nchannels: 
-            Number of channels.
-        start_time:
-            The beginning time of the pulse sequence (s). By default is 0.
-        stop_time:
-            The end time of the pulse sequence (s). 
+    The duration of the sequence equals (stop_time - start_time) and can be 
+    set via the stop_time and start_time attributes. When new pulses are added 
+    that go beyond the current interval [stop_time, start_time], the start and 
+    the stop times are automatically updated to accommodate all pulses.
 
     Attributes:
-        channels: A list containing sequences of the channel states. 
-        start_time: See args.
-        stop_time: See args.
+        channels: 
+            A list of DigitalChannel objects containing the channel state 
+            transitions. 
+        start_time: 
+            See the __init__ args.
+        stop_time: 
+            See the __init__ args.
     """
 
-    def __init__(self,
-                 nchannels: int = 8,
-                 start_time: float = 0,
-                 stop_time: Union[float, None] = None):
+    def __init__(self, nchannels: int = 8, start_time: float = 0,
+                 stop_time: float = 0):
+        """Creates an empty pulse sequence.
 
-        # Creates the list that will store channel states.
-        self.channels = [DigitalChannel() for i in range(nchannels)]
+        Args:
+            nchannels: 
+                Number of channels.
+            start_time:
+                The beginning time of the pulse sequence (in seconds). When new 
+                pulses are added, this time is automatically updated to 
+                accomodate them.
+            stop_time:
+                The end time of the pulse sequence (in seconds). When new 
+                pulses are added, this time is automatically updated to 
+                accomodate them. 
+        """
 
-        if not stop_time:
-            # In this case the sequence duration is considered zero until
-            # some pulses are added.
-            stop_time = start_time
+        if not stop_time >= start_time:
+            raise ValueError('stop_time must be >= start_time')
 
         self._interval = [start_time, stop_time]
+        self.channels = [DigitalChannel() for i in range(nchannels)]
 
-    def add_pulse(self, ch, t0, duration):
+    def add_pulse(self, ch, t0, duration) -> None:
         """Adds a pulse to the specified channel. A pulse consists of switching
         the channel state from the previous one, keeping the new state for the
         duration of time, and then switching the state back.
@@ -74,7 +80,7 @@ class Sequence:
         c.add_state_switch(t0)
         c.add_state_switch(t1)
 
-    def append_pulse(self, ch, delay, duration):
+    def append_pulse(self, ch, delay, duration) -> None:
         """Appends a pulse to the specified channel. A pulse consists of
         switching the channel state from the defult, keeping the new state 
         for the duration of time, and then switching the state back.
@@ -202,23 +208,25 @@ class Sequence:
 
 
 class DigitalChannel:
-    """Defines a time-dependent state of a single digital channel via the list 
-    of its state transitions.
+    """Defines a time-dependent state of a single digital channel by specifying 
+    its default and a list of state transitions.
 
     Attributes:
-        default:
-            The default state of the channel, a bool or 0/1.
+        default (bool):
+            The default state of the channel.
         switch_times (List[float]):
             An ordered list containing times (in seconds) at which the channel 
-            state is flipped. This list is to be modified only by using 
+            state is flipped. This list should only be modified by using 
             add_state_switch method. 
     """
 
     def __init__(self, default=False):
+        """Inits a channel instance with a given default state."""
+
         self.default = bool(default)
         self.switch_times = []
 
-    def add_state_switch(self, t):
+    def add_state_switch(self, t) -> None:
         """Adds a state flip at the time t (s)."""
 
         if t in self.switch_times:
@@ -228,7 +236,7 @@ class DigitalChannel:
         ind = len([t1 for t1 in self.switch_times if t1 < t])
         self.switch_times.insert(ind, t)
 
-    def state(self, t):
+    def state(self, t) -> bool:
         """Returns the state at the time t (s). If there is a state transition 
         at t, returns the value before the transition."""
 
@@ -239,10 +247,10 @@ class DigitalChannel:
             st = not self.default
         return st
 
-    def states(self):
+    def states(self) -> list:
         """Returns a list where the i-th element is the state before the i-th 
         state transition."""
-        
+
         new_states = []
         for i in range(len(self.switch_times)):
             if i % 2 == 0:
@@ -253,7 +261,7 @@ class DigitalChannel:
         return new_states
 
     def curve(self, interval=[]):
-        """Returns the state as a function of time over the specified 
+        """Returns the channel state as a function of time over the specified 
         time interval.
 
         Args:
@@ -304,6 +312,7 @@ class DigitalChannel:
 
     def __str__(self):
         """Displays the list of state transitions in a readable form."""
+
         switches = []
         for t in self.switch_times:
             st = self.state(t)

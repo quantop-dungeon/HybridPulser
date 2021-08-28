@@ -11,12 +11,21 @@ class PulseGen:
     """A class that communicates with the FPGA board. It programs pulse
     sequences to execute, initiates and stops pulse generation etc.
 
-    Args:
-        bitfile, resource: 
-            Arguments required by nifpga.Session
+    Attributes:
+        bitfile (str): 
+            Full name of the bitfile. 
+        resource (str): 
+            Address of the FPGA target.
     """
 
     def __init__(self, resource: str, bitfile: str = ''):
+        """Inits a class instance without opening an FPGA session.
+
+        Args:
+            bitfile, resource: 
+                Arguments required by nifpga.Session
+        """
+        
         if not bitfile:
             bitfile = get_bitfile()
         self.bitfile = bitfile
