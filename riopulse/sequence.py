@@ -205,7 +205,7 @@ class Sequence:
         axs[-1].set_ylim(-0.1, 1.1)
 
         fig.tight_layout()
-
+        plt.show()
 
 class DigitalChannel:
     """Defines a time-dependent state of a single digital channel by specifying 

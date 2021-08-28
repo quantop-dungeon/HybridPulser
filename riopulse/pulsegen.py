@@ -88,7 +88,7 @@ class PulseGen:
             se.registers['software trig'].write(True)
 
     def stop(self) -> None:
-        """Stops the generation of pulses with the outputs of channels in 
+        """Stops the generation of pulses and sets the outputs of channels to 
         the default state.
         """
 
