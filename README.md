@@ -31,18 +31,23 @@ pip install -e .
 
 ## Basic usage
 
-Defining a sequence of pulses in three synchronized channels. The outputs of all the channels of myRIO for which pulse sequences are not defined will be set to zero.
+The code below defines a sequence of pulses in three synchronized channels. The outputs of all the channels of myRIO for which pulse sequences are not defined will be set to zero.
 
 ```python
 from riopulse import Sequence
 
-# Signature: append_pulse(self, ch, delay, duration)
-seq = Sequence(nchannels=3, start_time=0)
+seq = Sequence(nchannels=3, defaults=[False, True, False], start_time=0)
+
+# Signature: seq.append_pulse(ch, delay, duration), all times are in seconds
 seq.append_pulse(0, 0.9e-6, 0.1e-6)
 seq.append_pulse(1, 4e-6, 1e-6)
 seq.append_pulse(1, 2.5e-6, 0.5e-6)
-seq.stop_time = 15e-6  # (s)
+seq.stop_time = 15e-6 
+
+# An alternative way of adding pulses is by using 
+# seq.add_pulse(self, ch, t0, duration)
 ```
+Here a pulse consists of switching the channel state from the previous one, keeping the new state for the duration of time, and then switching the state back.
 
 The sequence can be plotted by calling
 
@@ -50,7 +55,7 @@ The sequence can be plotted by calling
 seq.plot()
 ```
 
-One can load the sequence into the memory of the pulse generator as
+The sequence can be loaded into the memory of the FPGA board as
 
 ```python
 from riopulse import PulseGen
@@ -59,7 +64,7 @@ p = PulseGen('rio://172.22.11.2/RIO0')
 p.program(seq)
 ```
 
-By default, pulse sequences are repeated periodically - when one sequence is finished, another one is started without a delay. In order to pause and restart generation, use
+By default, pulse sequences are executed as soon as they are loaded and repeated periodically - when one sequence is finished, another one is started without a delay. In order to stop and start generation, use
 
 ```python
 p.stop()  # Stops the generation

@@ -23,13 +23,17 @@ class Sequence:
             See the __init__ args.
     """
 
-    def __init__(self, nchannels: int = 8, start_time: float = 0,
+    def __init__(self, nchannels: int = 8, defaults=None, start_time: float = 0,
                  stop_time: float = 0):
         """Creates an empty pulse sequence.
 
         Args:
             nchannels: 
                 Number of channels.
+            defaults (List[bool] or None):
+                The default states of the channels. Must be a list of logical
+                values with the length equal to nchannels or None, the latter
+                is interpreted as setting all default states to False.
             start_time:
                 The beginning time of the pulse sequence (in seconds). When new 
                 pulses are added, this time is automatically updated to 
@@ -44,9 +48,18 @@ class Sequence:
             raise ValueError('stop_time must be >= start_time')
 
         self._interval = [start_time, stop_time]
-        self.channels = [DigitalChannel() for i in range(nchannels)]
 
-    def add_pulse(self, ch, t0, duration) -> None:
+        if defaults:
+            if len(defaults) != nchannels:
+                raise ValueError(f'The number of defaults ({len(defaults)}) '
+                                 'must be equal to the number of channels '
+                                 f'({nchannels})')
+        else:
+            defaults = [False]*nchannels
+
+        self.channels = [DigitalChannel(defaults[i]) for i in range(nchannels)]
+
+    def add_pulse(self, ch: int, t0: float, duration: float) -> None:
         """Adds a pulse to the specified channel. A pulse consists of switching
         the channel state from the previous one, keeping the new state for the
         duration of time, and then switching the state back.
@@ -80,7 +93,7 @@ class Sequence:
         c.add_state_switch(t0)
         c.add_state_switch(t1)
 
-    def append_pulse(self, ch, delay, duration) -> None:
+    def append_pulse(self, ch: int, delay: float, duration: float) -> None:
         """Appends a pulse to the specified channel. A pulse consists of
         switching the channel state from the defult, keeping the new state 
         for the duration of time, and then switching the state back.
@@ -207,6 +220,7 @@ class Sequence:
         fig.tight_layout()
         plt.show()
 
+
 class DigitalChannel:
     """Defines a time-dependent state of a single digital channel by specifying 
     its default and a list of state transitions.
@@ -226,7 +240,7 @@ class DigitalChannel:
         self.default = bool(default)
         self.switch_times = []
 
-    def add_state_switch(self, t) -> None:
+    def add_state_switch(self, t: float) -> None:
         """Adds a state flip at the time t (s)."""
 
         if t in self.switch_times:
@@ -236,7 +250,7 @@ class DigitalChannel:
         ind = len([t1 for t1 in self.switch_times if t1 < t])
         self.switch_times.insert(ind, t)
 
-    def state(self, t) -> bool:
+    def state(self, t: float) -> bool:
         """Returns the state at the time t (s). If there is a state transition 
         at t, returns the value before the transition."""
 
@@ -260,7 +274,7 @@ class DigitalChannel:
 
         return new_states
 
-    def curve(self, interval=[]):
+    def curve(self, interval=None):
         """Returns the channel state as a function of time over the specified 
         time interval.
 
@@ -317,7 +331,7 @@ class DigitalChannel:
         for t in self.switch_times:
             st = self.state(t)
             switches.append('t=%gs\t%i->%i' % (t, st, not st))
-        
-        string_form = ('%s:\n%s' % 
+
+        string_form = ('%s:\n%s' %
                        (type(self).__name__, '\n'.join(switches)))
         return string_form
