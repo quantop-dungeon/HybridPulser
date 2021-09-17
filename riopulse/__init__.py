@@ -1,2 +1,4 @@
 from .compilation import * 
-from .sequence import Sequence
+from .pulsegen import *
+from .sequence import *
+from .gui import *
