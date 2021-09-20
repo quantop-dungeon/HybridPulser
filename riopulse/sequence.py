@@ -85,9 +85,9 @@ class Sequence:
         ft = [t for t in c.switch_times if (t > t0 and t < t1)]
         if ft:
             raise ValueError(f'There must be no existing transitions in the '
-                             'channel {ch} during the interval of the new '
-                             'pulse, [{t0}, {t1}]. Currently, there are '
-                             'transitions at t = {ft}.')
+                             f'channel {ch} during the interval of the new '
+                             f'pulse, [{t0}, {t1}]. Currently, there are '
+                             f'transitions at t = {ft}.')
 
         # Adds a new pulse to the channel.
         c.add_state_switch(t0)
