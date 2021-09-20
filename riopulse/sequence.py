@@ -73,8 +73,8 @@ class Sequence:
                 The duration of the pulse (s) - the interval between the front 
                 and the back edges.
         """
-        if duration <= 0:
-            raise ValueError('Duration must be positive.')
+        if not duration > 0:
+            raise ValueError('Duration must be greater than zero.')
 
         c = self.channels[ch]  # A short-hand notation
 
@@ -108,10 +108,10 @@ class Sequence:
                 The duration (s) of the pulse - the interval between the front 
                 and the back edges.
         """
-        if delay <= 0:
-            raise ValueError('Delay must be positive.')
-        if duration <= 0:
-            raise ValueError('Duration must be positive.')
+        if not delay >= 0:
+            raise ValueError('Delay must be greater or equal to zero.')
+        if not duration > 0:
+            raise ValueError('Duration must be greater than zero.')
 
         c = self.channels[ch]  # A short-hand notation
 
@@ -196,13 +196,15 @@ class Sequence:
             h = min(8, channel_no + 1)
             fig = plt.figure(figsize=(10, h))
 
+        tlim = [self.start_time, self.stop_time]
+
         gs = fig.add_gridspec(channel_no, hspace=0)
         axs = gs.subplots(sharex=True, sharey=True)
 
         fig.suptitle('Channel states')
 
         for i in range(channel_no):
-            axs[i].plot(*self.channels[i].curve(interval=self._interval),
+            axs[i].plot(*self.channels[i].curve(interval=tlim),
                         color=(6/255, 85/255, 170/255), linewidth=1)
 
             # Configures the axes appearance.
@@ -212,7 +214,7 @@ class Sequence:
             axs[i].tick_params(axis='both', direction='in', which='both',
                                bottom=True, top=False, left=True, right=True)
 
-        axs[-1].set_xlim(self._interval)
+        axs[-1].set_xlim(tlim)
         axs[-1].set_xlabel('Time (s)')
         axs[-1].set_yticks([0, 1])
         axs[-1].set_ylim(-0.1, 1.1)
