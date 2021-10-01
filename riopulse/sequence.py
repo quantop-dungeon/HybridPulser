@@ -2,26 +2,26 @@ import matplotlib.pyplot as plt
 
 
 class Sequence:
-    """Represents a realization of pulses in multiple synchronized digital 
+    """Represents a realization of pulses in multiple synchronized digital
     channels.
 
-    Pulses can be added to the sequence using add_pulse and append_pulse 
-    methods, which are different only in the way they parametrize timing. 
+    Pulses can be added to the sequence using add_pulse and append_pulse
+    methods, which are different only in the way they parametrize timing.
     The default state of i-th channel can be set via `self.channels[i].default`.
 
-    The duration of the sequence equals (`stop_time` - `start_time`) and can be 
-    set via the `stop_time` and `start_time` attributes. When new pulses are 
-    added that go beyond the current interval [`stop_time`, `start_time`], 
-    the start and the stop times are automatically updated to accommodate all 
+    The duration of the sequence equals (`stop_time` - `start_time`) and can be
+    set via the `stop_time` and `start_time` attributes. When new pulses are
+    added that go beyond the current interval [`stop_time`, `start_time`],
+    the start and the stop times are automatically updated to accommodate all
     pulses.
 
     Attributes:
-        channels: 
-            A list of DigitalChannel objects containing the channel state 
-            transitions. 
-        start_time: 
+        channels:
+            A list of DigitalChannel objects containing the channel state
+            transitions.
+        start_time:
             See the __init__ args.
-        stop_time: 
+        stop_time:
             See the __init__ args.
     """
 
@@ -30,20 +30,20 @@ class Sequence:
         """Creates an empty pulse sequence.
 
         Args:
-            nchannels: 
+            nchannels:
                 Number of channels.
             defaults (List[bool] or None):
                 The default states of the channels. Must be a list of logical
                 values with the length equal to nchannels or None, the latter
                 is interpreted as setting all default states to False.
             start_time:
-                The beginning time of the pulse sequence (in seconds). When new 
-                pulses are added, this time is automatically updated to 
+                The beginning time of the pulse sequence (in seconds). When new
+                pulses are added, this time is automatically updated to
                 accomodate them.
             stop_time:
-                The end time of the pulse sequence (in seconds). When new 
-                pulses are added, this time is automatically updated to 
-                accomodate them. 
+                The end time of the pulse sequence (in seconds). When new
+                pulses are added, this time is automatically updated to
+                accomodate them.
         """
 
         if not stop_time >= start_time:
@@ -63,20 +63,20 @@ class Sequence:
 
     def add_pulse(self, ch: int, t0: float, duration: float) -> None:
         """Adds a pulse to the specified channel. A pulse consists of switching
-        the channel state, keeping the new state for the duration of time, 
+        the channel state, keeping the new state for the duration of time,
         and then switching the state back.
 
         Args:
-            ch: 
+            ch:
                 Channel number.
-            t0: 
+            t0:
                 The time of the front edge of the pulse (s).
             duration:
-                The duration of the pulse (s) - the interval between the front 
+                The duration of the pulse (s) - the interval between the front
                 and the back edges.
         """
-        if duration <= 0:
-            raise ValueError('Duration must be positive.')
+        if not duration > 0:
+            raise ValueError('Duration must be greater than zero.')
 
         t1 = t0 + duration  # The back edge of the pulse
 
@@ -86,23 +86,23 @@ class Sequence:
 
     def append_pulse(self, ch: int, delay: float, duration: float) -> None:
         """Appends a pulse to the specified channel. A pulse consists of
-        switching the channel state, keeping the new state for the duration 
+        switching the channel state, keeping the new state for the duration
         of time, and then switching the state back.
 
         Args:
-            ch: 
+            ch:
                 Channel number.
-            delay: 
-                The delay (s) between the latest existing state transition in 
+            delay:
+                The delay (s) between the latest existing state transition in
                 the channel and the front edge of the new pulse.
             duration:
-                The duration (s) of the pulse - the interval between the front 
+                The duration (s) of the pulse - the interval between the front
                 and the back edges.
         """
-        if delay <= 0:
-            raise ValueError('Delay must be positive.')
-        if duration <= 0:
-            raise ValueError('Duration must be positive.')
+        if not delay >= 0:
+            raise ValueError('Delay must be greater or equal to zero.')
+        if not duration > 0:
+            raise ValueError('Duration must be greater than zero.')
 
         c = self.channels[ch]  # A short-hand notation
 
@@ -187,13 +187,15 @@ class Sequence:
             h = min(8, channel_no + 1)
             fig = plt.figure(figsize=(10, h))
 
+        tlim = [self.start_time, self.stop_time]
+
         gs = fig.add_gridspec(channel_no, hspace=0)
         axs = gs.subplots(sharex=True, sharey=True)
 
         fig.suptitle('Channel states')
 
         for i in range(channel_no):
-            axs[i].plot(*self.channels[i].curve(interval=self._interval),
+            axs[i].plot(*self.channels[i].curve(interval=tlim),
                         color=(6/255, 85/255, 170/255), linewidth=1)
 
             # Configures the axes appearance.
@@ -203,7 +205,7 @@ class Sequence:
             axs[i].tick_params(axis='both', direction='in', which='both',
                                bottom=True, top=False, left=True, right=True)
 
-        axs[-1].set_xlim(self._interval)
+        axs[-1].set_xlim(tlim)
         axs[-1].set_xlabel('Time (s)')
         axs[-1].set_yticks([0, 1])
         axs[-1].set_ylim(-0.1, 1.1)
@@ -213,16 +215,16 @@ class Sequence:
 
 
 class DigitalChannel:
-    """Represents the time-dependent state of a single digital channel specified 
+    """Represents the time-dependent state of a single digital channel specified
     by a default value and a list of times at which state transitions happened.
 
     Attributes:
         default (bool):
             The default state of the channel.
         switch_times (List[float]):
-            An ordered list containing times (in seconds) at which the channel 
-            state is flipped. This list should only be modified by using 
-            add_state_switch method. 
+            An ordered list containing times (in seconds) at which the channel
+            state is flipped. This list should only be modified by using
+            add_state_switch method.
     """
 
     def __init__(self, default=False):
@@ -245,7 +247,7 @@ class DigitalChannel:
             self.switch_times.insert(ind, t)
 
     def state(self, t: float) -> bool:
-        """Returns the state at the time t (s). If there is a state transition 
+        """Returns the state at the time t (s). If there is a state transition
         at t, returns the value before the transition."""
 
         ind = len([t1 for t1 in self.switch_times if t1 < t])
@@ -256,7 +258,7 @@ class DigitalChannel:
         return st
 
     def states(self) -> list:
-        """Returns a list where the i-th element is the state before the i-th 
+        """Returns a list where the i-th element is the state before the i-th
         state transition."""
 
         new_states = []
@@ -269,7 +271,7 @@ class DigitalChannel:
         return new_states
 
     def curve(self, interval=None) -> tuple:
-        """Returns the channel state as a function of time over the specified 
+        """Returns the channel state as a function of time over the specified
         time interval.
 
         Args:
