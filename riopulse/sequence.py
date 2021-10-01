@@ -2,16 +2,18 @@ import matplotlib.pyplot as plt
 
 
 class Sequence:
-    """Defines a realization of pulses in multiple synchronized digital 
+    """Represents a realization of pulses in multiple synchronized digital 
     channels.
 
     Pulses can be added to the sequence using add_pulse and append_pulse 
     methods, which are different only in the way they parametrize timing. 
+    The default state of i-th channel can be set via `self.channels[i].default`.
 
-    The duration of the sequence equals (stop_time - start_time) and can be 
-    set via the stop_time and start_time attributes. When new pulses are added 
-    that go beyond the current interval [stop_time, start_time], the start and 
-    the stop times are automatically updated to accommodate all pulses.
+    The duration of the sequence equals (`stop_time` - `start_time`) and can be 
+    set via the `stop_time` and `start_time` attributes. When new pulses are 
+    added that go beyond the current interval [`stop_time`, `start_time`], 
+    the start and the stop times are automatically updated to accommodate all 
+    pulses.
 
     Attributes:
         channels: 
@@ -61,8 +63,8 @@ class Sequence:
 
     def add_pulse(self, ch: int, t0: float, duration: float) -> None:
         """Adds a pulse to the specified channel. A pulse consists of switching
-        the channel state from the previous one, keeping the new state for the
-        duration of time, and then switching the state back.
+        the channel state, keeping the new state for the duration of time, 
+        and then switching the state back.
 
         Args:
             ch: 
@@ -76,27 +78,16 @@ class Sequence:
         if duration <= 0:
             raise ValueError('Duration must be positive.')
 
-        c = self.channels[ch]  # A short-hand notation
-
         t1 = t0 + duration  # The back edge of the pulse
 
-        # Checks that there are no existing state switches between the front
-        # and the back edges of the pulse.
-        ft = [t for t in c.switch_times if (t > t0 and t < t1)]
-        if ft:
-            raise ValueError(f'There must be no existing transitions in the '
-                             'channel {ch} during the interval of the new '
-                             'pulse, [{t0}, {t1}]. Currently, there are '
-                             'transitions at t = {ft}.')
-
         # Adds a new pulse to the channel.
-        c.add_state_switch(t0)
-        c.add_state_switch(t1)
+        self.channels[ch].add_state_switch(t0)
+        self.channels[ch].add_state_switch(t1)
 
     def append_pulse(self, ch: int, delay: float, duration: float) -> None:
         """Appends a pulse to the specified channel. A pulse consists of
-        switching the channel state from the defult, keeping the new state 
-        for the duration of time, and then switching the state back.
+        switching the channel state, keeping the new state for the duration 
+        of time, and then switching the state back.
 
         Args:
             ch: 
@@ -179,7 +170,7 @@ class Sequence:
 
         self._interval[1] = value
 
-    def plot(self, fig=None):
+    def plot(self, fig=None) -> None:
         """Plots the channel states versus time using matplotlib.
 
         Args:
@@ -222,8 +213,8 @@ class Sequence:
 
 
 class DigitalChannel:
-    """Defines a time-dependent state of a single digital channel by specifying 
-    its default and a list of state transitions.
+    """Represents the time-dependent state of a single digital channel specified 
+    by a default value and a list of times at which state transitions happened.
 
     Attributes:
         default (bool):
@@ -241,14 +232,17 @@ class DigitalChannel:
         self.switch_times = []
 
     def add_state_switch(self, t: float) -> None:
-        """Adds a state flip at the time t (s)."""
+        """Adds a state switch at the time t (s)."""
 
         if t in self.switch_times:
-            raise ValueError('A state change at time %.3e already exists' % t)
 
-        # Adds a new state switch in a way that keeps the list time-ordered.
-        ind = len([t1 for t1 in self.switch_times if t1 < t])
-        self.switch_times.insert(ind, t)
+            # Two state switches at the same time cancel each other.
+            self.switch_times.remove(t)
+        else:
+
+            # Adds a new state switch in a way that keeps the list time-ordered.
+            ind = len([t1 for t1 in self.switch_times if t1 < t])
+            self.switch_times.insert(ind, t)
 
     def state(self, t: float) -> bool:
         """Returns the state at the time t (s). If there is a state transition 
@@ -274,7 +268,7 @@ class DigitalChannel:
 
         return new_states
 
-    def curve(self, interval=None):
+    def curve(self, interval=None) -> tuple:
         """Returns the channel state as a function of time over the specified 
         time interval.
 
