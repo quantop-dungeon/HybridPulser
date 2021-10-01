@@ -190,25 +190,25 @@ class Sequence:
         tlim = [self.start_time, self.stop_time]
 
         gs = fig.add_gridspec(channel_no, hspace=0)
-        axs = gs.subplots(sharex=True, sharey=True)
+        axs = gs.subplots(sharex=True, sharey=True, squeeze=False)
 
         fig.suptitle('Channel states')
 
         for i in range(channel_no):
-            axs[i].plot(*self.channels[i].curve(interval=tlim),
+            axs[i, 0].plot(*self.channels[i].curve(interval=tlim),
                         color=(6/255, 85/255, 170/255), linewidth=1)
 
             # Configures the axes appearance.
-            axs[i].set_ylabel(f'Ch {i}')
-            axs[i].set_facecolor('none')
-            axs[i].minorticks_on()
-            axs[i].tick_params(axis='both', direction='in', which='both',
+            axs[i, 0].set_ylabel(f'Ch {i}')
+            axs[i, 0].set_facecolor('none')
+            axs[i, 0].minorticks_on()
+            axs[i, 0].tick_params(axis='both', direction='in', which='both',
                                bottom=True, top=False, left=True, right=True)
 
-        axs[-1].set_xlim(tlim)
-        axs[-1].set_xlabel('Time (s)')
-        axs[-1].set_yticks([0, 1])
-        axs[-1].set_ylim(-0.1, 1.1)
+        axs[-1, 0].set_xlim(tlim)
+        axs[-1, 0].set_xlabel('Time (s)')
+        axs[-1, 0].set_yticks([0, 1])
+        axs[-1, 0].set_ylim(-0.1, 1.1)
 
         fig.tight_layout()
         plt.show()
