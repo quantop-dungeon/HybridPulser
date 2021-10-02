@@ -33,7 +33,7 @@ def gui(p: PulseGen):
     ui_file = os.path.join(os.path.dirname(__file__), 'pulsegen.ui')
     uic.loadUi(ui_file, window)
 
-    window.continueButton.clicked.connect(p.run_continuous)
+    window.continuousButton.clicked.connect(p.run_continuous)
     window.singleButton.clicked.connect(p.run_single)
     window.stopButton.clicked.connect(p.stop)
 

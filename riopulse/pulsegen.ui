@@ -20,7 +20,7 @@
       <number>20</number>
      </property>
      <item>
-      <widget class="QPushButton" name="continueButton">
+      <widget class="QPushButton" name="continuousButton">
        <property name="enabled">
         <bool>true</bool>
        </property>
