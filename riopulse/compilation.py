@@ -42,7 +42,7 @@ def translate(seq: Sequence, dt: float = 1e-8) -> list:
     # Adds a command to wait for a trigger to start the sequence.
     commands.append(['trigwait', 0, 0])
 
-    # The output signals start in the default state.
+    # The outputs start in the default state.
     sig = 0b0
     for i, c in enumerate(seq.channels):
         sig = sig | (c.default << i)
@@ -51,7 +51,7 @@ def translate(seq: Sequence, dt: float = 1e-8) -> list:
     for ch, cc_next in zip(channel_numbers, clock_cycles):
         if cc_next > cc:
 
-            # Adds a continuous output of sig for (cc-cc_curr) clock cycles
+            # Adds a continuous output of sig for (cc_next-cc) clock cycles
             # and moves to the clock cycle of the next switch.
             commands.append(['cout', sig, cc_next-cc-1])
             cc = cc_next
