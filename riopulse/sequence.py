@@ -1,3 +1,4 @@
+from typing import Union
 import matplotlib.pyplot as plt
 
 
@@ -25,8 +26,11 @@ class Sequence:
             See the __init__ args.
     """
 
-    def __init__(self, nchannels: int = 8, defaults=None, start_time: float = 0,
-                 stop_time: float = 0):
+    def __init__(self,
+                 nchannels: int = 8,
+                 defaults: list = None,
+                 start_time: float = 0,
+                 stop_time: Union[float, None] = None):
         """Creates an empty pulse sequence.
 
         Args:
@@ -37,17 +41,24 @@ class Sequence:
                 values with the length equal to nchannels or None, the latter
                 is interpreted as setting all default states to False.
             start_time:
-                The beginning time of the pulse sequence (in seconds). When new
-                pulses are added, this time is automatically updated to
-                accomodate them.
+                The beginning time of the pulse sequence (in seconds). 
+                The default is 0. When new pulses are added, this time is 
+                automatically updated to accomodate them.
             stop_time:
                 The end time of the pulse sequence (in seconds). When new
                 pulses are added, this time is automatically updated to
                 accomodate them.
         """
 
-        if not stop_time >= start_time:
-            raise ValueError('stop_time must be >= start_time')
+        if stop_time is None:
+            # The sequence duration is zero on creation. Usually, it means that
+            # the sequence will be extended by adding pulses or by specifying
+            # the stop time later.
+            stop_time = start_time
+        else:
+            # Checks the consistency of the start and the stop time.
+            if not stop_time >= start_time:
+                raise ValueError('stop_time must be >= start_time')
 
         self._interval = [start_time, stop_time]
 
@@ -196,14 +207,14 @@ class Sequence:
 
         for i in range(channel_no):
             axs[i, 0].plot(*self.channels[i].curve(interval=tlim),
-                        color=(6/255, 85/255, 170/255), linewidth=1)
+                           color=(6/255, 85/255, 170/255), linewidth=1)
 
             # Configures the axes appearance.
             axs[i, 0].set_ylabel(f'Ch {i}')
             axs[i, 0].set_facecolor('none')
             axs[i, 0].minorticks_on()
             axs[i, 0].tick_params(axis='both', direction='in', which='both',
-                               bottom=True, top=False, left=True, right=True)
+                                  bottom=True, top=False, left=True, right=True)
 
         axs[-1, 0].set_xlim(tlim)
         axs[-1, 0].set_xlabel('Time (s)')
@@ -212,6 +223,17 @@ class Sequence:
 
         fig.tight_layout()
         plt.show()
+
+    def __eq__(self, other):
+        """Two sequences are equal if their start and stop times are 
+        the same and the states of their channels are the same."""
+
+        b = (type(self) == type(other)
+             and self.start_time == other.start_time
+             and self.stop_time == other.stop_time
+             and self.channels == other.channels)
+
+        return b
 
 
 class DigitalChannel:
@@ -331,3 +353,12 @@ class DigitalChannel:
         string_form = ('%s:\n%s' %
                        (type(self).__name__, '\n'.join(switches)))
         return string_form
+
+    def __eq__(self, other):
+        """Two channels are equal if their default values are
+        the same and their state transitions are the same."""
+
+        b = (type(self) == type(other) and self.default == other.default
+             and self.switch_times == other.switch_times)
+
+        return b
