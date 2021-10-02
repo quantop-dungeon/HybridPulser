@@ -58,21 +58,21 @@ seq.stop_time = 75e-6
 seq.plot()
 ```
 The plotted result is
-![seq1ch1](doc\sequence_1ch.png)
+![seq1ch1](doc/sequence_1ch.png)
 
 Pulses in a sequence can be overlapped, in which case they subtract
 ```python
 seq.add_pulse(0, 40e-6, 10e-6)
 seq.plot()
 ```
-![seq1ch2](doc\sequence_1ch_2.png)
+![seq1ch2](doc/sequence_1ch_2.png)
 
 The default outputs can be set either on construction of `Sequence`, or via `default` attribute of the digital channels. Setting `default` to `True` inverts the sequence
 ```python
 seq.channels[0].default = True
 seq.plot()
 ```
-![seq1ch3](doc\sequence_1ch_3.png)
+![seq1ch3](doc/sequence_1ch_3.png)
 
 To give another example, a sequence of pulses in three synchronized channels is defined below.
 ```python
@@ -88,7 +88,7 @@ seq.append_pulse(1, 2.5e-6, 0.5e-6)
 
 seq.plot()
 ```
-![seq3ch](doc\sequence_3ch.png)
+![seq3ch](doc/sequence_3ch.png)
 
 Sequence channels are mapped into DIO 0-7 channels of the RIO board. The outputs of all the channels for which pulse sequences are not defined will be set to zero.
 
