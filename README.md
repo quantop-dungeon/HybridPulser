@@ -6,12 +6,11 @@ The repository consists of two parts:
  * A LabVIEW FPGA project for a National Instruments myRIO-1900 board that implements a programmable TTL pulse generator. The generator is a state machine defined within the FPGA that reads instructions from the memory and updates the outputs accordingly. Sets of instructions have to be transferred to the FPGA from a host PC.
  * `riopulse` - a python package that implements a high-level interface to the pulse generator. It uses [nifpga API](https://nifpga-python.readthedocs.io/) for communication with the hardware.
  
- FPGA bitfiles can be found in the python module directory. 
+FPGA bitfiles are installed with the python package and need to be loaded to the board on the first run as described below. 
 
 ## Limitations
-* 10 ns pulse definition resolution.
+* 10 ns time resolution.
 * 8 digital output channels (DIO 0-7 on myRIO).
-* The time resolution for the definition of pulse edges is 10 ns.
 * Maximum 10 000 output state transitions per sequence (the state transitions of all channels during one clock cycle count as one).
 * The maximum pulse duration is 2^48 clock cycles = appoximately 782 hours.
 
@@ -100,6 +99,12 @@ In order to generate physical output, a `Sequence` object needs to be compiled i
 from riopulse import PulseGen
 
 p = PulseGen('rio://172.22.11.2/RIO0')
+
+# Loads the bitfile. This is only necessary if the board was running a different
+# program before; for just updating the output sequence this step should be skipped.
+p.init_fpga()
+
+# Loads the output sequence.
 p.program(seq)
 ```
 
