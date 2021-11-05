@@ -1,12 +1,12 @@
 # A myRIO-based TTL pulse generator with a python interface.
 
-The generator operates as a pseudocklock - it defines pulses using sequences of channel state transitions rather than their states at every clock cycle. In this way, the generator can produce long pulses timed with the resolution limited by the frequency of the FPGA clock, which is 100 MHz in the current version. 
+The generator operates as a pseudoclock - it defines pulses using sequences of channel state transitions rather than their states at every clock cycle. In this way, the generator can produce long pulses timed with a resolution limited by the frequency of the FPGA clock, which is 100 MHz in the current version. 
 
 The repository consists of two parts: 
  * A LabVIEW FPGA project for a National Instruments myRIO-1900 board that implements a programmable TTL pulse generator. The generator is a state machine defined within the FPGA that reads instructions from the memory and updates the outputs accordingly. Sets of instructions have to be transferred to the FPGA from a host PC.
  * `riopulse` - a python package that implements a high-level interface to the pulse generator. It uses [nifpga API](https://nifpga-python.readthedocs.io/) for communication with the hardware.
  
-FPGA bitfiles are installed with the python package and need to be loaded to the board on the first run as described below. 
+An FPGA bitfile is installed with the python package and needs to be loaded to the board on the first run as described in the usage section below. 
 
 ## Limitations
 * 10 ns time resolution.
